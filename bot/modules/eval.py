@@ -1,15 +1,14 @@
-from os import path as ospath, getcwd, chdir
-from traceback import format_exc
-from textwrap import indent
-from io import StringIO, BytesIO
-from telegram import ParseMode
-from telegram.ext import CommandHandler
 from contextlib import redirect_stdout
+from io import BytesIO, StringIO
+from os import chdir, getcwd, path
+from textwrap import indent
+from traceback import format_exc
 
-from bot.helper.telegram_helper.filters import CustomFilters
-from bot.helper.telegram_helper.bot_commands import BotCommands
-from bot.helper.telegram_helper.message_utils import sendMessage
+from telegram.ext import CommandHandler
+
 from bot import LOGGER, dispatcher
+from bot.helper.telegram_helper.bot_commands import BotCommands
+from bot.helper.telegram_helper.filters import CustomFilters
 
 namespaces = {}
 
@@ -43,7 +42,7 @@ def send(msg, bot, update):
         bot.send_message(
             chat_id=update.effective_chat.id,
             text=f"`{msg}`",
-            parse_mode=ParseMode.MARKDOWN)
+            parse_mode='Markdown')
 
 def evaluate(update, context):
     bot = context.bot
@@ -66,7 +65,7 @@ def do(func, bot, update):
 
     chdir(getcwd())
     with open(
-            ospath.join(getcwd(),
+            path.join(getcwd(),
                          'bot/modules/temp.txt'),
             'w') as temp:
         temp.write(body)
@@ -112,22 +111,10 @@ def clear(update, context):
         del namespaces[update.message.chat_id]
     send("Cleared locals.", bot, update)
 
-def exechelp(update, context):
-    help_string = f'''
-<b>Executor</b>
-• {BotCommands.EvalCommand} <i>Run Python Code Line | Lines</i>
-• {BotCommands.ExecCommand} <i>Run Commands In Exec</i>
-• {BotCommands.ClearLocalsCommand} <i>Cleared locals</i>
-'''
-    sendMessage(help_string, context.bot, update.message)
+eval_handler = CommandHandler(BotCommands.EvalCommand, evaluate, filters=CustomFilters.owner_filter)
+exec_handler = CommandHandler(BotCommands.ExecCommand, execute, filters=CustomFilters.owner_filter)
+clear_handler = CommandHandler(BotCommands.ClearLocalsCommand, clear, filters=CustomFilters.owner_filter)
 
-
-EVAL_HANDLER = CommandHandler(BotCommands.EvalCommand, evaluate, filters=CustomFilters.owner_filter, run_async=True)
-EXEC_HANDLER = CommandHandler(BotCommands.ExecCommand, execute, filters=CustomFilters.owner_filter, run_async=True)
-CLEAR_HANDLER = CommandHandler(BotCommands.ClearLocalsCommand, clear, filters=CustomFilters.owner_filter, run_async=True)
-EXECHELP_HANDLER = CommandHandler(BotCommands.ExecHelpCommand, exechelp, filters=CustomFilters.owner_filter, run_async=True)
-
-dispatcher.add_handler(EVAL_HANDLER)
-dispatcher.add_handler(EXEC_HANDLER)
-dispatcher.add_handler(CLEAR_HANDLER)
-dispatcher.add_handler(EXECHELP_HANDLER)
+dispatcher.add_handler(eval_handler)
+dispatcher.add_handler(exec_handler)
+dispatcher.add_handler(clear_handler)

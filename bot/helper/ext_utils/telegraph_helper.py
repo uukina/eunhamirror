@@ -1,8 +1,5 @@
-# Implement By - @VarnaX-279
-
 from string import ascii_letters
 from random import SystemRandom
-
 from time import sleep
 from telegraph import Telegraph
 from telegraph.exceptions import RetryAfterError
@@ -12,7 +9,7 @@ from bot import LOGGER
 
 class TelegraphHelper:
     def __init__(self, author_name=None, author_url=None):
-        self.telegraph = Telegraph()
+        self.telegraph = Telegraph(domain='graph.org')
         self.short_name = ''.join(SystemRandom().choices(ascii_letters, k=8))
         self.access_token = None
         self.author_name = author_name
@@ -53,7 +50,7 @@ class TelegraphHelper:
         except RetryAfterError as st:
             LOGGER.warning(f'Telegraph Flood control exceeded. I will sleep for {st.retry_after} seconds.')
             sleep(st.retry_after)
-        return self.edit_page(path, title, content)
+            return self.edit_page(path, title, content)
 
     def edit_telegraph(self, path, telegraph_content):
         nxt_page = 1
@@ -72,10 +69,17 @@ class TelegraphHelper:
                     nxt_page += 1
             self.edit_page(
                 path = path[prev_page],
-                title = 'Mirror-leech-bot Torrent Search',
+                title = 'Jmdkh-mltb Torrent Search',
                 content=content
             )
         return
+    
+    def revoke_access_token(self):
+        LOGGER.info('Revoking telegraph access token...')
+        try:
+            return self.telegraph.revoke_access_token()
+        except Exception as e:
+            LOGGER.error(f'Failed Revoking telegraph access token due to : {e}')
 
 
-telegraph=TelegraphHelper('Mirror-Leech-Telegram-Bot', 'https://github.com/anasty17/mirror-leech-telegram-bot')
+telegraph=TelegraphHelper('Jmdkh-mltb', 'https://github.com/junedkh/jmdkh-mltb')

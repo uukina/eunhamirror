@@ -1,14 +1,21 @@
-from bot.helper.ext_utils.bot_utils import get_readable_file_size,MirrorStatus, get_readable_time
-from bot import DOWNLOAD_DIR
+from mega import MegaApi
 
+from bot.helper.ext_utils.bot_utils import (MirrorStatus,
+                                            get_readable_file_size,
+                                            get_readable_time)
+
+engine_ = f"MegaSDK v{MegaApi('test').getVersion()}"
 
 class MegaDownloadStatus:
 
     def __init__(self, obj, listener):
-        self.__uid = obj.uid
         self.__listener = listener
         self.__obj = obj
-        self.message = listener.message
+        self.message = self.__listener.message
+        self.startTime = self.__listener.startTime
+        self.mode = self.__listener.mode
+        self.source = self.__source()
+        self.engine = engine_
 
     def name(self) -> str:
         return self.__obj.name
@@ -16,7 +23,7 @@ class MegaDownloadStatus:
     def progress_raw(self):
         try:
             return round(self.processed_bytes() / self.__obj.size * 100,2)
-        except ZeroDivisionError:
+        except:
             return 0.0
 
     def progress(self):
@@ -48,14 +55,21 @@ class MegaDownloadStatus:
     def speed_raw(self):
         return self.__obj.speed
 
+    def listener(self):
+        return self.__listener
+
     def speed(self) -> str:
         return f'{get_readable_file_size(self.speed_raw())}/s'
 
     def gid(self) -> str:
         return self.__obj.gid
 
-    def path(self) -> str:
-        return f"{DOWNLOAD_DIR}{self.__uid}"
-
     def download(self):
         return self.__obj
+
+    def __source(self):
+        reply_to = self.message.reply_to_message
+        source = reply_to.from_user.username or reply_to.from_user.id if reply_to and \
+            not reply_to.from_user.is_bot else self.message.from_user.username \
+                or self.message.from_user.id
+        return f"<a href='{self.message.link}'>{source}</a>"

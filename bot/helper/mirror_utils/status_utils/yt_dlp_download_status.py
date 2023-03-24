@@ -1,19 +1,27 @@
+from pkg_resources import get_distribution
+
 from bot import DOWNLOAD_DIR
-from bot.helper.ext_utils.bot_utils import MirrorStatus, get_readable_file_size, get_readable_time
+from bot.helper.ext_utils.bot_utils import (MirrorStatus,
+                                            get_readable_file_size,
+                                            get_readable_time)
 from bot.helper.ext_utils.fs_utils import get_path_size
 
-class YoutubeDLDownloadStatus:
+engine_ = f"yt-dlp v{get_distribution('yt-dlp').version}"
+
+class YtDlpDownloadStatus:
     def __init__(self, obj, listener, gid):
         self.__obj = obj
         self.__uid = listener.uid
         self.__gid = gid
-        self.message = listener.message
+        self.__listener = listener
+        self.message = self.__listener.message
+        self.startTime = self.__listener.startTime
+        self.mode = self.__listener.mode
+        self.source = self.__source()
+        self.engine = engine_
 
     def gid(self):
         return self.__gid
-
-    def path(self):
-        return f"{DOWNLOAD_DIR}{self.__uid}"
 
     def processed_bytes(self):
         if self.__obj.downloaded_bytes != 0:
@@ -45,10 +53,15 @@ class YoutubeDLDownloadStatus:
         """
         return self.__obj.download_speed
 
+    def listener(self):
+        return self.__listener
+
     def speed(self):
         return f'{get_readable_file_size(self.speed_raw())}/s'
 
     def eta(self):
+        if self.__obj.eta != '-':
+            return f'{get_readable_time(self.__obj.eta)}'
         try:
             seconds = (self.size_raw() - self.processed_bytes()) / self.speed_raw()
             return f'{get_readable_time(seconds)}'
@@ -57,3 +70,10 @@ class YoutubeDLDownloadStatus:
 
     def download(self):
         return self.__obj
+
+    def __source(self):
+        reply_to = self.message.reply_to_message
+        source = reply_to.from_user.username or reply_to.from_user.id if reply_to and \
+            not reply_to.from_user.is_bot else self.message.from_user.username \
+                or self.message.from_user.id
+        return f"<a href='{self.message.link}'>{source}</a>"
